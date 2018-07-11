@@ -1,6 +1,6 @@
-	subroutine elmt40(d,ul,xl,ix,tl,s,p,ndf,ndm,nst,isw)
+        subroutine elmt45(d,ul,xl,ix,tl,s,p,ndf,ndm,nst,isw)
 
-c       Alexandros z Richtung
+c       Alexandros x-Richtung
 	
 	!Bearbeitet 2D ELEM --> 3D ELEM
 	
@@ -144,7 +144,7 @@ c---------------STEMA/ Residuum
 C---------------------------------------------------------
 c	Materialmatrix C-Matrix 3D
 
-	call mate3D40(d,cmat)
+	call mate3D45(d,cmat)
 
 	alpha = d(3)
 	
@@ -152,7 +152,7 @@ C---------------------------------------------------------
 c       Normal matrix
 
 c	get normal matrix of face 2 on positive element between nodes 2 and 3
-	call normalmat40(xl,normal)
+	call normalmat45(xl,normal)
 	
 C---------------------------------------------------------
 c	loop over gauss points
@@ -160,7 +160,7 @@ c	loop over gauss points
          
 C---------------------------------------------------------
 c	shape functions and derivatives wrt. xsi and eta
-	    call shape40(ig,xl,shp,Bmatpos,Bmatneg,Nmatpos,Nmatneg,detJ
+	    call shape45(ig,xl,shp,Bmatpos,Bmatneg,Nmatpos,Nmatneg,detJ
      + ,rint)
         
 ! !         rint=1.0d0
@@ -225,17 +225,17 @@ c	stiffness loop Kalpha 11 : Kalpha11(24,24)=Kalp11(24,24)+ Nmatpos(3,3,8) * Nma
 	enddo          
 
 	enddo !4gp/face  
- 	
+!  	
  	ig = 1
  	
 !  c	Zusätzlichen Anteil zur Elementsteifigkeitsmatrix mit alpha*/beta bilden
-  	call shp1gp40(ig,xl,shp,Naddpos,Naddneg,w,rint)
+  	call shp1gp45(ig,xl,shp,Naddpos,Naddneg,w,rint)
  
 !  c	Integration & Vorfaktor alpha* bzw beta
         !rint=1.0d0
   	ds = rint * w
   	beta = d(4)
-c	write(*,*)'rint', rint
+!   	write(*,*)'rint', rint
  
 c	stiffness loop Kalphaadd 11
  	do i = 1,8
@@ -288,10 +288,10 @@ c       Kcon(48,48), Kconii(24,24), Kalp ...
  	 
 	 enddo
 	enddo
-! 	
-! 	open(unit=777,file='Kalp_3Dz_alex.txt',status='unknown')
+
+! 	open(unit=777,file='Kcon_3Dx_alex.txt',status='unknown')
 ! 	 do ii = 1,48
-! 	  write(777,'(48(E15.7,A1))')(Kalp(ii,jj),'  ',jj = 1,48)
+! 	  write(777,'(48(E15.7,A1))')(Kcon(ii,jj),'  ',jj = 1,48)
 ! 	 enddo
 ! 	close(777)
 
@@ -309,12 +309,13 @@ c      Lösung mit Matlab
 !          
 !           enddo
 !         enddo
-!         
+!        close(333)
+! !         
 c-----------------------------------------------------------------------------------
         
 !   call mprint(Kcon(1,1),48,48,48,'Kcon')
 !   call mprint(Kcon11(1,1),24,24,24,'Kcon11')
-      call mprint(Kalp(1,1),48,48,48,'Kalp_z')
+ 	call mprint(Kalp(1,1),48,48,48,'Kalp_x')
      
 c	element stiffness total
 	do i = 1,48
@@ -414,7 +415,7 @@ c---------   S U B R O U T I N E S   -----------------------------------
 c=======================================================================    
 
 c-----------------------------------------------------------------------
-      subroutine mate3D40(d,cmat)
+      subroutine mate3D45(d,cmat)
 c-----------------------------------------------------------------------
 c
 c      Purpose: calculate linear isotropic elasticity matrix
@@ -490,7 +491,7 @@ c-----------------------------------------------------------------------
 ! 	  end                                                            
 
 c-----------------------------------------------------------------------
-      subroutine normalmat40(xl,normal)                                      
+      subroutine normalmat45(xl,normal)                                      
 c-----------------------------------------------------------------------
 c
 c      Purpose: compute normal vector of every face of a 4-noded element
@@ -505,23 +506,23 @@ c-----------------------------------------------------------------------
       implicit none
       real*8 xl(3,16),normvec(3,1),va(3,1),vb(3,1),vc(3,1),crvec(3,1)                                
       real*8 normal(3,6),magnitudea, magnitudeb, magnitudec 
-      real*8 fi, h, surface, betragnormvec 
-      integer i  !, betragnormvec  
+      real*8 fi, h, surface, betragnormvec
+      integer i !, betragnormvec    
       
 
       
       call pzero(normal,3*6)
-
-c.... create list for the distance between the nodal coordinates of node 2-3 and 2-6 
-	  
-	  va(1,1) = xl(1,6)-xl(1,5)
-	  va(2,1) = xl(2,6)-xl(2,5)
- 	  va(3,1) = xl(3,6)-xl(3,5)
+! 
+! c.... create list for the distance between the nodal coordinates of node 2-3 and 2-6 
+! 	  
+	  va(1,1) = xl(1,7)-xl(1,6)
+	  va(2,1) = xl(2,7)-xl(2,6)
+ 	  va(3,1) = xl(3,7)-xl(3,6)
 	
-	  vb(1,1) = xl(1,8)-xl(1,5)
-          vb(2,1) = xl(2,8)-xl(2,5)
-          vb(3,1) = xl(3,8)-xl(3,5)
-
+	  vb(1,1) = xl(1,2)-xl(1,6)
+          vb(2,1) = xl(2,2)-xl(2,6)
+          vb(3,1) = xl(3,2)-xl(3,6)
+! 
           
 ! c.... create list of the normalvector n = a x b  , a-Vektor from node 2->3, b-Vektor from node 2->6
 ! 
@@ -531,87 +532,54 @@ c.... create list for the distance between the nodal coordinates of node 2-3 and
         
         betragnormvec = sqrt(normvec(1,1)*normvec(1,1)+normvec(2,1)*
      +  normvec(2,1)+normvec(3,1)*normvec(3,1))
-        
+     
+        !normvec(1,1) = -(va(2,1)*vb(3,1)-vb(2,1)*va(3,1))
+!         
         
 !          write(*,*)'normvec(1,1)',normvec(1,1)
 !          write(*,*)'normvec(2,1)',normvec(2,1)
 !          write(*,*)'normvec(3,1)',normvec(3,1)
 !          write(*,*)'betragnormvec', betragnormvec
-         
+!          
 	
 c.... normalmatrix on positive element (face 2)
-! 	
-! 	  normal(1,1) = normvec(1,1)/betragnormvec
-! 	  normal(2,2) = normvec(2,1)/betragnormvec
-! 	  normal(3,3) = normvec(3,1)/betragnormvec  
-! 	  normal(1,4) = normvec(2,1)/betragnormvec
-! 	  normal(2,4) = normvec(1,1)/betragnormvec  
-! 	  normal(2,5) = normvec(3,1)/betragnormvec       
-!           normal(3,5) = normvec(2,1)/betragnormvec  
-!           normal(1,6) = normvec(3,1)/betragnormvec
-!           normal(3,6) = normvec(1,1)/betragnormvec
-          
-          normal(1,1) = normvec(1,1)/betragnormvec
+	
+	  normal(1,1) = normvec(1,1)/betragnormvec
 	  normal(2,2) = normvec(2,1)/betragnormvec
-	  normal(3,3) = normvec(3,1)/betragnormvec 
+	  normal(3,3) = normvec(3,1)/betragnormvec  
 	  normal(1,4) = normvec(2,1)/betragnormvec
-	  normal(2,4) = normvec(1,1)/betragnormvec 
-	  normal(2,5) = normvec(3,1)/betragnormvec      
-          normal(3,5) = normvec(2,1)/betragnormvec 
+	  normal(2,4) = normvec(1,1)/betragnormvec  
+	  normal(2,5) = normvec(3,1)/betragnormvec       
+          normal(3,5) = normvec(2,1)/betragnormvec  
           normal(1,6) = normvec(3,1)/betragnormvec
           normal(3,6) = normvec(1,1)/betragnormvec
-          
-!          
-!         write(*,*)'normal(1,1)',normal(1,1)
-!           write(*,*)'normal(2,2)',normal(2,2)
-!           write(*,*)'normal(3,3)',normal(3,3)
-!           write(*,*)'normal(1,4)',normal(1,4)
-!           write(*,*)'normal(2,4)',normal(2,4)
-!           write(*,*)'normal(2,5)',normal(2,5)
-!           write(*,*)'normal(3,5)',normal(3,5)
-!           write(*,*)'normal(1,6)',normal(1,6)
-!           write(*,*)'normal(3,6)',normal(3,6)
-          
-! c--------------------------------
-! c        Matlab beispiel: 
-        
-!         normal(1,1) = 0.0d0
-!         normal(2,2) = 0.0d0
-!         normal(3,3) = 1.0d0
-!         normal(1,4) = 0.0d0
-!         normal(2,4) = 0.0d0
-!         normal(2,5) = 1.0d0
-!         normal(3,5) = 0.0d0
-!         normal(1,6) = 1.0d0
-!         normal(3,6) = 0.0d0
-c------------------------------------
-        
-!         call mprint(normal(1,1),3,6,3,'normal')
-        
-! c.... <<<<< Calculating the Surface of a Parallelogramm >>>>
+         
+!           write(*,*)'normal(1,1)',normal(1,1)
+! !           write(*,*)'normal(2,2)',normal(2,2)
+! !           write(*,*)'normal(3,3)',normal(3,3)
+! !           write(*,*)'normal(1,4)',normal(1,4)
+! !           write(*,*)'normal(2,4)',normal(2,4)
+! !           write(*,*)'normal(2,5)',normal(2,5)
+! !           write(*,*)'normal(3,5)',normal(3,5)
+! !           write(*,*)'normal(1,6)',normal(1,6)
+! !           write(*,*)'normal(3,6)',normal(3,6)
 ! 
-!         vc(1,1) = xl(1,7)-xl(1,5)
-!         vc(2,1) = xl(2,7)-xl(2,5)
-!         vc(3,1) = xl(3,7)-xl(3,5)
-!         
-!         magnitudea = dsqrt(va(1,1)**2+va(2,1)**2+va(3,1)**2)
-!         magnitudeb = dsqrt(vb(1,1)**2+vb(2,1)**2+vb(3,1)**2)
-!         magnitudec = dsqrt(vc(1,1)**2+vc(2,1)**2+vc(3,1)**2)
-!         
-!         fi = acos((magnitudea**2+magnitudeb**2-magnitudec**2)
-!      +   /(2*magnitudea*magnitudeb))
-!         
-!         h = sin(fi)*magnitudeb
-!         
-!         surface = magnitudea*h
-! 	
-! 	rint = surface  
 
+!         normal(1,1) = 1.0d0
+!         normal(2,2) = 0.0d0
+!         normal(3,3) = 0.0d0
+!         normal(1,4) = 0.0d0
+!         normal(2,4) = 1.0d0
+!         normal(2,5) = 0.0d0
+!         normal(3,5) = 0.0d0
+!         normal(1,6) = 0.0d0
+!         normal(3,6) = 1.0d0
+          
       return              
       end
 
 c-----------------------------------------------------------------------
-      subroutine shape40(ig,xl,shp,Bmatpos,Bmatneg,Nmatpos,Nmatneg,detJ,
+      subroutine shape45(ig,xl,shp,Bmatpos,Bmatneg,Nmatpos,Nmatneg,detJ,
      + rint)
 c-----------------------------------------------------------------------
 c
@@ -638,35 +606,35 @@ c-----------------------------------------------------------------------
 
       w = 1.0d0  
 
-      gp(1,1)= -1.0d0/dsqrt(3.0d0)           ! GAUSS PUNKTE Xi ELEM 1
-      gp(2,1)=  1.0d0/dsqrt(3.0d0)
-      gp(3,1)=  1.0d0/dsqrt(3.0d0)
-      gp(4,1)= -1.0d0/dsqrt(3.0d0)
+      gp(1,1)=   1.0d0         ! GAUSS PUNKTE Xi ELEM 1
+      gp(2,1)=   1.0d0
+      gp(3,1)=   1.0d0
+      gp(4,1)=   1.0d0
       
-      gp(5,1)= -1.0d0/dsqrt(3.0d0)              ! GAUSS PUNKTE Xi ELEM 2
-      gp(6,1)=  1.0d0/dsqrt(3.0d0)
-      gp(7,1)=  1.0d0/dsqrt(3.0d0)
-      gp(8,1)= -1.0d0/dsqrt(3.0d0)
+      gp(5,1)=  -1.0d0            ! GAUSS PUNKTE Xi ELEM 2
+      gp(6,1)=  -1.0d0
+      gp(7,1)=  -1.0d0
+      gp(8,1)=  -1.0d0
       
       gp(1,2)= -1.0d0/dsqrt(3.0d0)        ! GAUSS PUNKTE ETA ELEM 1
-      gp(2,2)= -1.0d0/dsqrt(3.0d0)
-      gp(3,2)=  1.0d0/dsqrt(3.0d0)
-      gp(4,2)=  1.0d0/dsqrt(3.0d0)
+      gp(2,2)=  1.0d0/dsqrt(3.0d0) 
+      gp(3,2)=  1.0d0/dsqrt(3.0d0) 
+      gp(4,2)= -1.0d0/dsqrt(3.0d0) 
       
-      gp(5,2)= -1.0d0/dsqrt(3.0d0)        ! GAUSS PUNKTE ETA ELEM 2
-      gp(6,2)= -1.0d0/dsqrt(3.0d0)
+      gp(5,2)= -1.0d0/dsqrt(3.0d0)       ! GAUSS PUNKTE ETA ELEM 2
+      gp(6,2)=  1.0d0/dsqrt(3.0d0)
       gp(7,2)=  1.0d0/dsqrt(3.0d0)
-      gp(8,2)=  1.0d0/dsqrt(3.0d0)
+      gp(8,2)= -1.0d0/dsqrt(3.0d0)
       
-      gp(1,3)= 1.0d0                       ! GAUSS PUNKTE ZETA ELEM 1
-      gp(2,3)= 1.0d0 
-      gp(3,3)= 1.0d0  
-      gp(4,3)= 1.0d0  
+      gp(1,3)= -1.0d0/dsqrt(3.0d0)           ! GAUSS PUNKTE ZETA ELEM 1
+      gp(2,3)= -1.0d0/dsqrt(3.0d0) 
+      gp(3,3)=  1.0d0/dsqrt(3.0d0)  
+      gp(4,3)=  1.0d0/dsqrt(3.0d0)  
       
-      gp(5,3)= -1.0d0                      ! GAUSS PUNKTE ZETA ELEM 2
-      gp(6,3)= -1.0d0
-      gp(7,3)= -1.0d0
-      gp(8,3)= -1.0d0
+      gp(5,3)= -1.0d0/dsqrt(3.0d0)           ! GAUSS PUNKTE ZETA ELEM 2
+      gp(6,3)= -1.0d0/dsqrt(3.0d0)
+      gp(7,3)=  1.0d0/dsqrt(3.0d0)
+      gp(8,3)=  1.0d0/dsqrt(3.0d0)
                                                                                               ! SHAPE FUKTIONS 8 KNOTEN ELEMENT FÜR ELEM 1
 	  shp(1) = 0.125d0 * (1.0d0 - gp(ig,1)) * (1.0d0 - gp(ig,2))
      +  * (1.0d0 - gp(ig,3))       
@@ -918,7 +886,7 @@ c-----------------------------------------------------------------------
       end
 
 c-----------------------------------------------------------------------
-      subroutine shp1gp40(ig,xl,shp,Naddpos,Naddneg,w,rint)
+      subroutine shp1gp45(ig,xl,shp,Naddpos,Naddneg,w,rint)
 c-----------------------------------------------------------------------
 c
 c      Purpose: 
@@ -942,14 +910,14 @@ c-----------------------------------------------------------------------
 
         w = 2.0d0  ! (w = 4.0d0)
 
-        gp(1,1) =  0.0d0
-        gp(2,1) =  0.0d0
+        gp(1,1) =  1.0d0
+        gp(2,1) = -1.0d0
       
         gp(1,2) =  0.0d0
         gp(2,2) =  0.0d0
       
-        gp(1,3) =  1.0d0
-        gp(2,3) = -1.0d0
+        gp(1,3) =  0.0d0
+        gp(2,3) =  0.0d0
 
 	shp(1) = 0.125d0 * (1.0d0 - gp(ig,1)) * (1.0d0 - gp(ig,2))
      +  * (1.0d0 - gp(ig,3))
@@ -1023,8 +991,8 @@ c-----------------------------------------------------------------------
      +          -J(2,3)*J(3,1))+J(1,3)*(J(2,1)*J(3,2)-J(2,2)*J(3,1))
      
         rint = detJ
-  !      write(*,*)'rint shp1gp40',rint
-     
+!         write(*,*)'rint shp1gp40',rint
+!      
  	  CofJ(1,1)=J(2,2)*J(3,3)-J(2,3)*J(3,2)        
  	  CofJ(1,2)=J(1,3)*J(3,2)-J(1,2)*J(3,3)
  	  CofJ(1,3)=J(1,2)*J(2,3)-J(1,3)*J(2,2)
